@@ -68,7 +68,7 @@ class Helper:
         start_year, end_year = map(int, financial_year.split('-'))
 
         start_date = datetime(start_year, 4, 1)
-        end_date = datetime(end_year + 1, 3, 31) 
+        end_date = datetime(end_year + 1, 3, 31)
 
         from_date_str = start_date.strftime("%b-%Y")
         to_date_str = end_date.strftime("%b-%Y")
@@ -332,12 +332,12 @@ class Helper:
             }
             processed_data.append(processed_entry)
         return processed_data
-    
-    
+
+
 class NSEIndices(Helper):
     def __init__(self):
         self.router = APIRouter(tags=["NSE Indices"])
-    
+
     def register_routes(self, app):
         self.router.add_api_route("/nseindices/history", self.get_nse_index_history, methods=["GET"], tags=["NSE Indices"])
         self.router.add_api_route("/nseindices/ratios", self.get_nse_indices_ratios, methods=["GET"], tags=["NSE Indices"])
@@ -346,17 +346,17 @@ class NSEIndices(Helper):
         self.router.add_api_route("/nseindices/india-vix", self.get_india_vix_history, methods=["GET"], tags=["NSE Indices"])
         self.router.add_api_route("/nseindices/index-symbols", self.get_index_symbols, methods=["GET"], tags=["NSE Indices"])
         app.include_router(self.router)
-        
+
     def index_history(self, symbol, start_date, end_date):
         base_url="https://www.nseindia.com/api/historical/indicesHistory"
         customized_request_url = f"{base_url}?indexType={symbol}&from={start_date}&to={end_date}"
         response=self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_nse_index_history(
@@ -371,18 +371,18 @@ class NSEIndices(Helper):
             return JSONResponse(content={"index_historical_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching historical data: {e}")
-        
+
     def index_pe_pb_div(self, symbol, start_date, end_date):
         start_date = datetime.datetime.strptime(start_date, "%d-%b-%Y").strftime("%d %b %Y")
         end_date = datetime.datetime.strptime(end_date, "%d-%b-%Y").strftime("%d %b %Y")
-        
+
         data = {"cinfo": f"{{'name':'{symbol}','startDate':'{start_date}','endDate':'{end_date}'}}"}
         payload = requests.post('https://niftyindices.com/Backpage.aspx/getpepbHistoricaldataDBtoString', headers=self.niftyindices_headers, json=data).json()
         payload = json.loads(payload["d"])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail="No historical data found.")
-        
+
         payload=pd.DataFrame.from_records(payload)
         return payload
 
@@ -397,18 +397,18 @@ class NSEIndices(Helper):
             return historical_ratios_data.to_dict(orient='records')
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching historical ratios data: {e}")
-        
+
     def index_total_returns(self, symbol,start_date,end_date):
         start_date = datetime.datetime.strptime(start_date, "%d-%b-%Y").strftime("%d %b %Y")
         end_date = datetime.datetime.strptime(end_date, "%d-%b-%Y").strftime("%d %b %Y")
-        
+
         data = {"cinfo": f"{{'name':'{symbol}','startDate':'{start_date}','endDate':'{end_date}'}}"}
         payload = requests.post('https://niftyindices.com/Backpage.aspx/getTotalReturnIndexString', headers=self.niftyindices_headers, json=data).json()
         payload = json.loads(payload["d"])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail="No historical data found.")
-        
+
         payload=pd.DataFrame.from_records(payload)
         return payload
 
@@ -423,7 +423,7 @@ class NSEIndices(Helper):
             return historical_returns_data.to_dict(orient='records')
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching historical ratios data: {e}")
-        
+
     def get_pcr(
         self,
         symbol: str = Query(..., title="Symbol", description="Indice symbol")
@@ -452,18 +452,18 @@ class NSEIndices(Helper):
         base_url="https://www.nseindia.com/api/historical/vixhistory"
         customized_request_url = f"{base_url}?from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_india_vix_history(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for historical data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),
     ):
         try:
             historical_data = self.india_vix_history(start_date, end_date)
@@ -471,11 +471,11 @@ class NSEIndices(Helper):
             return JSONResponse(content={"vix_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching India Vix historical data: {e}")
-        
+
     def fetch_index_symbols(self):
         url = 'https://nseindia.com/api/allIndices'
         try:
-            response = self.fetch_data_from_nse(url) 
+            response = self.fetch_data_from_nse(url)
             data = response.get('data', [])
             index_symbols = [entry['indexSymbol'] for entry in data]
             return index_symbols
@@ -489,7 +489,7 @@ class NSEIndices(Helper):
 class NSEEquities(Helper):
     def __init__(self):
         self.router = APIRouter(tags=["NSE Equities"])
-        
+
     def register_routes(self, app):
         self.router.add_api_route("/equities/security-archives", self.get_security_wise_archive, methods=["GET"], tags=["NSE Equities"])
         self.router.add_api_route("/equities/bulk-deals-archives", self.get_bulk_deals_archives, methods=["GET"], tags=["NSE Equities"])
@@ -506,18 +506,19 @@ class NSEEquities(Helper):
         self.router.add_api_route("/equities/insider-trading", self.get_insider_trading, methods=["GET"], tags=["NSE Equities"])
         self.router.add_api_route("/equities/shareholding-patterns", self.get_shareholding_patterns, methods=["GET"], tags=["NSE Equities"])
         self.router.add_api_route("/equities/annual-reports", self.get_annual_reports, methods=["GET"], tags=["NSE Equities"])
+        self.router.add_api_route("/equities/trade-info", self.trade_info, methods=["GET"], tags=["NSE Equities"])
         app.include_router(self.router)
-    
-    def security_wise_archive(self, symbol, start_date, end_date, series="ALL"):   
+
+    def security_wise_archive(self, symbol, start_date, end_date, series="ALL"):
         base_url = "https://www.nseindia.com/api/historical/securityArchives"
         customized_request_url = f"{base_url}?from={start_date}&to={end_date}&symbol={symbol.upper()}&dataType=priceVolumeDeliverable&series={series.upper()}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_security_wise_archive(
@@ -533,23 +534,23 @@ class NSEEquities(Helper):
             return JSONResponse(content={"stock_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching security-wise archive data: {e}")
-        
+
     def bulk_deals_archives(self, start_date, end_date):
         base_url = "https://www.nseindia.com/api/historical/bulk-deals"
         customized_request_url = f"{base_url}?from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_bulk_deals_archives(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for historical data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),
     ):
         try:
             historical_data = self.bulk_deals_archives(start_date, end_date)
@@ -557,23 +558,23 @@ class NSEEquities(Helper):
             return JSONResponse(content={"bulk_deal_archive_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching bulk-deals archive data: {e}")
-        
+
     def block_deals_archives(self, start_date, end_date):
         base_url = "https://www.nseindia.com/api/historical/block-deals"
         customized_request_url = f"{base_url}?from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_block_deals_archives(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for historical data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),
     ):
         try:
             historical_data = self.block_deals_archives(start_date, end_date)
@@ -581,23 +582,23 @@ class NSEEquities(Helper):
             return JSONResponse(content={"block_deal_archive_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching block deals archive data: {e}")
-        
+
     def short_selling_archives(self, start_date, end_date):
         base_url = "https://www.nseindia.com/api/historical/short-selling"
         customized_request_url = f"{base_url}?from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_short_selling_archives(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for historical data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for historical data in dd-mm-yyyy format"),
     ):
         try:
             historical_data = self.short_selling_archives(start_date, end_date)
@@ -608,24 +609,24 @@ class NSEEquities(Helper):
 
     def corporate_actions(self, start_date, end_date):
         base_url = "https://www.nseindia.com/api/corporates-corporateActions"
-        
+
         customized_request_url = f"{base_url}?index=equities&from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         if not response:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         if isinstance(response, list):
             payload = response
         else:
             payload = response.get('data', [])
-        
+
         return pd.DataFrame(payload)
-        
+
     def get_corporate_actions(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for data in dd-mm-yyyy format"),
     ):
         try:
             data = self.corporate_actions(start_date, end_date)
@@ -633,17 +634,17 @@ class NSEEquities(Helper):
             return JSONResponse(content={"corporate_actions_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching corporate actions data: {e}")
-        
+
     def nse_monthly_most_active_securities(self):
         request_url = "https://www.nseindia.com/api/live-analysis-most-active-securities?index=volume"
         response = self.fetch_data_from_nse(request_url)
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
-        
+
     def get_nse_monthly_most_active_securities(self):
         try:
             historical_data = self.nse_monthly_most_active_securities()
@@ -651,51 +652,51 @@ class NSEEquities(Helper):
             return JSONResponse(content={"most_active_securities_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching monthly most active securities data: {e}")
-        
+
     def nse_monthly_advances_and_declines(self, year):
         base_url="https://www.nseindia.com/api/historical/advances-decline-monthly"
         customized_request_url = f"{base_url}?year={year}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         return pd.DataFrame(payload)
 
     def get_nse_monthly_advances_and_declines(
         self,
-        year: str = Query(..., title="Year", description="Year for historical data in format YYYY"), 
+        year: str = Query(..., title="Year", description="Year for historical data in format YYYY"),
     ):
         if not re.match(r"\d{4}", year):
             raise HTTPException(status_code=422, detail="Invalid year format. Please use 'YYYY' format.")
-        
+
         try:
             historical_data = self.nse_monthly_advances_and_declines(year)
             processed_data = self.process_monthly_advances_declines_data(historical_data)
             return JSONResponse(content={"monthly_advances_and_declines_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching advances and declines data: {e}")
-        
+
     def nse_capital_market_monthly_settlement_stats(self, financial_year):
         base_url = "https://www.nseindia.com/api/historical/monthly-sett-stats-data"
         customized_request_url = f"{base_url}?finYear={financial_year}"
         response = self.fetch_data_from_nse(customized_request_url)
         payload = response.get('data', [])
-        
+
         if not payload:
             raise HTTPException(status_code=404, detail=f"No capital market settlement statistics found.")
-        
+
         return pd.DataFrame(payload)
 
     def get_nse_capital_market_monthly_settlement_stats(
         self,
-        financial_year: str = Query(..., title="Year", description="Financial Year for historical data in format YYYY-YYYY"), 
+        financial_year: str = Query(..., title="Year", description="Financial Year for historical data in format YYYY-YYYY"),
     ):
         if not re.match(r"\d{4}-\d{4}", financial_year):
             raise HTTPException(status_code=422, detail="Invalid financial year format. Please use 'YYYY-YYYY' format.")
-        
+
         try:
             historical_data = self.nse_capital_market_monthly_settlement_stats(financial_year)
             processed_data = self.process_capital_market_monthly_settlement_stats(historical_data)
@@ -708,31 +709,31 @@ class NSEEquities(Helper):
         base_url = "https://www.nseindia.com/api/financial-monthlyStats"
         customized_request_url = f"{base_url}?from_date={from_date}&to_date={to_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        payload = response 
-        
+        payload = response
+
         if not payload:
             raise HTTPException(status_code=404, detail="No monthly settlement statistics found.")
-        
+
         return pd.DataFrame(payload)
 
     def get_nse_fno_monthly_settlement_stats(
         self,
-        financial_year: str = Query(..., title="Year", description="Financial Year for historical data in format YYYY-YYYY"), 
+        financial_year: str = Query(..., title="Year", description="Financial Year for historical data in format YYYY-YYYY"),
     ):
         if not re.match(r"\d{4}-\d{4}", financial_year):
             raise HTTPException(status_code=422, detail="Invalid financial year format. Please use 'YYYY-YYYY' format.")
-        
+
         try:
             historical_data = self.nse_fno_monthly_settlement_stats(financial_year)
-            
+
             if not isinstance(historical_data, pd.DataFrame):
                 raise HTTPException(status_code=404, detail="No data found.")
-            
+
             processed_data = self.process_fno_monthly_settlement_stats(historical_data)
             return JSONResponse(content={"fno_monthly_settlement_stats_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching monthly settlement statistics for future & options: {e}")
-        
+
     def pcr_stocks_scraper(self, symbol):
         url = 'https://www.nseindia.com/api/option-chain-equities?symbol=' + symbol
         headers = {
@@ -743,7 +744,7 @@ class NSEEquities(Helper):
         request = requests.get("https://www.nseindia.com", timeout=10, headers=headers)
         cookies = dict(request.cookies)
         response = requests.get(url, headers=headers, cookies= cookies).content
-        
+
         data = json.loads(response.decode('utf-8'))
         totCE = data['filtered']['CE']['totOI']
         totPE = data['filtered']['PE']['totOI']
@@ -768,24 +769,24 @@ class NSEEquities(Helper):
 
     def board_meetings(self, start_date, end_date):
         base_url = "https://www.nseindia.com/api/corporate-board-meetings"
-        
+
         customized_request_url = f"{base_url}?index=equities&from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         if not response:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         if isinstance(response, list):
             payload = response
         else:
             payload = response.get('data', [])
-        
+
         return pd.DataFrame(payload)
-        
+
     def get_board_meetings(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for data in dd-mm-yyyy format"),
     ):
         try:
             data = self.board_meetings(start_date, end_date)
@@ -793,27 +794,27 @@ class NSEEquities(Helper):
             return JSONResponse(content={"board_meetings_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching board meetings data: {e}")
-        
+
     def insider_trading(self, start_date, end_date):
         base_url = "https://www.nseindia.com/api/corporates-pit"
-        
+
         customized_request_url = f"{base_url}?index=equities&from={start_date}&to={end_date}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         if not response:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         if isinstance(response, list):
             payload = response
         else:
             payload = response.get('data', [])
-        
+
         return pd.DataFrame(payload)
-        
+
     def get_insider_trading(
         self,
         start_date: str = Query(..., title="From Date", description="Start date for data in dd-mm-yyyy format"),
-        end_date: str = Query(..., title="To Date", description="End date for data in dd-mm-yyyy format"),  
+        end_date: str = Query(..., title="To Date", description="End date for data in dd-mm-yyyy format"),
     ):
         try:
             data = self.insider_trading(start_date, end_date)
@@ -821,22 +822,22 @@ class NSEEquities(Helper):
             return JSONResponse(content={"insider_trading_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching insider_trading data: {e}")
-        
+
     def shareholding_patterns(self, symbol):
         base_url = "https://www.nseindia.com/api/corporate-share-holdings-master"
-        
+
         customized_request_url = f"{base_url}?index=equities&symbol={symbol}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         if not response:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         if isinstance(response, list):
             payload = response
         else:
             payload = response.get('data', [])
         return pd.DataFrame(payload)
-        
+
     def get_shareholding_patterns(
         self,
         symbol: str = Query(..., title="Symbol", description="Stock Symbol")
@@ -847,22 +848,22 @@ class NSEEquities(Helper):
             return JSONResponse(content={"shareholding_patterns_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching shareholding patterns data: {e}")
-         
+
     def annual_reports(self, symbol):
         base_url = "https://www.nseindia.com/api/annual-reports"
-        
+
         customized_request_url = f"{base_url}?index=equities&symbol={symbol}"
         response = self.fetch_data_from_nse(customized_request_url)
-        
+
         if not response:
             raise HTTPException(status_code=404, detail=f"No data found for the specified parameters.")
-        
+
         if isinstance(response, list):
             payload = response
         else:
             payload = response.get('data', [])
         return pd.DataFrame(payload)
-        
+
     def get_annual_reports(
         self,
         symbol: str = Query(..., title="Symbol", description="Stock Symbol")
@@ -873,3 +874,17 @@ class NSEEquities(Helper):
             return JSONResponse(content={"annual_reports_data": processed_data})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching annual reports data: {e}")
+
+    def trade_info(self, symbol):
+        url = 'https://www.nseindia.com/api/quote-equity?section=trade_info&symbol=' + symbol
+        headers = {
+            'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+            'accept-encoding' : 'gzip, deflate, br',
+            'accept-language' : 'en-US,en;q=0.9'
+        }
+        request = requests.get("https://www.nseindia.com", timeout=10, headers=headers)
+        cookies = dict(request.cookies)
+        response = requests.get(url, headers=headers, cookies= cookies).content
+
+        data = json.loads(response.decode('utf-8'))
+        return data
